@@ -2,7 +2,7 @@
 
 Experiments with pathfinding algorithms
 
-# Commands
+## Commands
 
 Running the tests:
 
@@ -16,7 +16,17 @@ Running the sample:
 python3 src/main.py
 ```
 
-# Plans
+## Packages required
+
+You might have to install some packages if you're running the scripts on Mac.
+
+For `app.py`:
+
+```python
+brew install python-tk
+```
+
+## Plans
 
 - [ ] Github Actions: format stage, isort stage, tests stage
 - [ ] Add more tests to account for large-scale grids
