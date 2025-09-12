@@ -8,7 +8,13 @@ class Test_A_Star:
     """Standard case tests checking for whether the correct result is returned"""
 
     def test_standard_case_one_5x5(self):
-        grid = ("◦S◦◦◦", "◦███◦", "◦◦◦◦◦", "◦◦F◦◦", "◦◦◦◦◦")
+        grid = (
+            "◦S◦◦◦",
+            "◦███◦",
+            "◦◦◦◦◦",
+            "◦◦F◦◦",
+            "◦◦◦◦◦"
+        )
 
         sol = A_star_pathfind(grid)
         expected_path = textwrap.dedent(
@@ -20,11 +26,17 @@ class Test_A_Star:
                                         ◦◦◦◦◦"""
         )
 
-        assert sol.shortest_path == 3
+        assert sol.path_length == 3
         assert expected_path == sol.print_path()
 
     def test_standard_case_two_5x7(self):
-        grid = ("◦◦◦◦S◦◦", "◦██◦███", "███◦◦◦◦", "◦◦◦◦███", "◦F◦█◦◦█")
+        grid = (
+            "◦◦◦◦S◦◦",
+            "◦██◦███",
+            "███◦◦◦◦",
+            "◦◦◦◦███",
+            "◦F◦█◦◦█"
+        )
 
         sol = A_star_pathfind(grid)
         expected_path = textwrap.dedent(
@@ -36,7 +48,7 @@ class Test_A_Star:
                                         ◦F◦█◦◦█"""
         )
 
-        assert sol.shortest_path == 4
+        assert sol.path_length == 4
         assert expected_path == sol.print_path()
 
     def test_standard_case_three_7x7(self):
@@ -62,7 +74,7 @@ class Test_A_Star:
                                         ◦◦→F███"""
         )
 
-        assert sol.shortest_path == 9
+        assert sol.path_length == 9
         assert expected_path == sol.print_path()
 
     def test_standard_case_four_10x7(self):
@@ -94,7 +106,8 @@ class Test_A_Star:
                                         ◦F◦◦◦██"""
         )
 
-        assert sol.shortest_path == 11
+        assert sol.path_length == 11
+        print(sol.print_path)
         assert expected_path == sol.print_path()
 
     def test_standard_case_five_10x7(self):
@@ -126,7 +139,7 @@ class Test_A_Star:
                                         ◦◦◦◦◦██"""
         )
 
-        assert sol.shortest_path == 8
+        assert sol.path_length == 8
         assert expected_path == sol.print_path()
 
     def test_standard_case_six_10x10(self):
@@ -158,13 +171,19 @@ class Test_A_Star:
                                         ◦██◦◦██◦◦◦"""
         )
 
-        assert sol.shortest_path == 8
+        assert sol.path_length == 8
         assert expected_path == sol.print_path()
 
     """ Validation check tests """
 
     def test_no_valid_path(self):
-        grid = ("◦◦◦◦S◦◦", "◦██◦███", "███◦◦◦◦", "◦◦█████", "◦F◦█◦◦█")
+        grid = (
+            "◦◦◦◦S◦◦",
+            "◦██◦███",
+            "███◦◦◦◦",
+            "◦◦█████",
+            "◦F◦█◦◦█"
+        )
 
         with pytest.raises(Exception) as exc_info:
             _ = A_star_pathfind(grid)
@@ -215,7 +234,13 @@ class Test_A_Star:
         )
 
     def test_nonmatching_row_lengths(self):
-        grid = ("◦S◦◦◦", "◦███◦◦", "◦◦◦◦◦", "◦◦F◦◦", "◦◦◦◦◦")
+        grid = (
+            "◦S◦◦◦",
+            "◦███◦◦",
+            "◦◦◦◦◦",
+            "◦◦F◦◦",
+            "◦◦◦◦◦"
+        )
 
         with pytest.raises(ValueError) as exc_info:
             _ = A_star_pathfind(grid)

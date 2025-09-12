@@ -32,6 +32,8 @@ class A_star_pathfind:
         self.__grid: Grid = grid
         self.__start: Coord = None
         self.__end: Coord = None
+        self.path: list = []
+        self.path_length: int = 0
 
         try:
             self.set_and_validate_inputs()
@@ -41,7 +43,7 @@ class A_star_pathfind:
         except Exception as err:
             raise Exception(err)
 
-        self.shortest_path = self.get_shortest_path()
+        self.get_path()
 
     """
         Pathfinding function based on A star algorithm
@@ -95,37 +97,33 @@ class A_star_pathfind:
         Function for calculating the steps taken for the shortest path
     """
 
-    def get_shortest_path(self) -> int:
+    def get_path(self) -> None:
         cell_to_check = self.__origin_cell[self.__end]
-        shortest_path = 0
 
         while cell_to_check:
-            shortest_path += 1
+            self.path.insert(0, cell_to_check)
+            self.path_length += 1
             cell_to_check = self.__origin_cell[cell_to_check]
-
-        return shortest_path
 
     """
         Function for printing out the grid with the route for the shortest path
     """
 
     def print_path(self) -> str:
-        cell_to_check = self.__origin_cell[self.__end]
         prev_cell = self.__end
         grid = list(self.__grid)
 
-        while cell_to_check:
-            x, y = cell_to_check
+        for cell in self.path[::-1]:
+            x, y = cell
             grid[x] = list(grid[x])
 
-            all_n = self.get_all_neighbours(cell_to_check)
+            all_n = self.get_all_neighbours(cell)
             matching_dir = next(
-                direction for direction, cell in all_n.items() if cell == prev_cell
+                direction for direction, coords in all_n.items() if coords == prev_cell
             )
             grid[x][y] = Path[matching_dir].value
 
-            prev_cell = cell_to_check
-            cell_to_check = self.__origin_cell[cell_to_check]
+            prev_cell = cell
 
         return "\n".join("".join(row) for row in grid)
 

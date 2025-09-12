@@ -16,14 +16,10 @@ Running the sample:
 python3 src/main.py
 ```
 
-## Packages required
-
-You might have to install some packages if you're running the scripts on Mac.
-
-For `app.py`:
+Running the UI:
 
 ```python
-brew install python-tk
+python3 src/app.py
 ```
 
 ## Plans
