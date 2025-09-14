@@ -3,6 +3,12 @@ import sys
 from enum import Enum
 
 import pygame
+from kivy.app import App
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.core.window import Window
 from a_star import A_star_pathfind, Cell_Type
 
 type Coord = tuple[int, int]
@@ -23,13 +29,14 @@ class ClickType(Enum):
 
 class Pathfind_UI_App:
     def __init__(self):
-        self.SCREEN = None
-        self.GRID_HEIGHT = 15
-        self.GRID_WIDTH = 15
+        self.GRID_HEIGHT = 20
+        self.GRID_WIDTH = 20
         self.GRID_MARGIN = 100
-        self.BLOCK_SIZE = 15
+        self.BLOCK_SIZE = 20
         self.WINDOW_HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.BLOCK_SIZE
         self.WINDOW_WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.BLOCK_SIZE
+
+        self.LAYOUT = GridLayout(cols=self.GRID_WIDTH, row_default_height=self.BLOCK_SIZE)
 
         self.START_COORDS = None
         self.END_COORDS = None
@@ -40,7 +47,6 @@ class Pathfind_UI_App:
         self.PATH = None
 
     def run_app(self):
-        pygame.init()
         self.SCREEN = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
         self.SCREEN.fill(Colours.PASS.value)
         pygame.display.set_caption("Fun with Pathfind")
@@ -155,6 +161,7 @@ class Pathfind_UI_App:
                 x = self.GRID_MARGIN + h * self.GRID_HEIGHT
                 y = self.GRID_MARGIN + w * self.GRID_WIDTH
                 rect = pygame.Rect(y, x, self.BLOCK_SIZE, self.BLOCK_SIZE)
+
                 self.ALL_RECTS[(h, w)] = rect
 
                 if (h, w) in self.WALLS:
