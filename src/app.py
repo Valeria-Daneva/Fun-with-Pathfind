@@ -1,131 +1,139 @@
 import random
-import sys
 from enum import Enum
 
-import pygame
+from a_star import A_star_pathfind, Cell_Type
 from kivy.app import App
+from kivy.config import Config
+from kivy.core.window import Window
+from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
-from kivy.core.window import Window
-from a_star import A_star_pathfind, Cell_Type
+
+Config.set("kivy", "exit_on_escape", "0")
 
 type Coord = tuple[int, int]
 
 
 class Colours(Enum):
-    PASS = (50, 50, 50)
-    WALL = (200, 200, 200)
-    START = (222, 49, 99)
-    END = (127, 255, 212)
-    PATH = (108, 59, 170)
+    PASS = (1.5, 1.5, 1.5, 1.5)
+    WALL = (0.7, 0.7, 0.7, 0.7)
+    START = (1, 0, 0, 1)
+    END = (0, 1, 0, 1)
+    PATH = (1, 0, 1, 1)
 
 
 class ClickType(Enum):
-    LEFT = 1
-    RIGHT = 3
+    LEFT = "left"
+    RIGHT = "right"
 
 
-class Pathfind_UI_App:
-    def __init__(self):
-        self.GRID_HEIGHT = 20
-        self.GRID_WIDTH = 20
-        self.GRID_MARGIN = 100
-        self.BLOCK_SIZE = 20
+Window.system_size = (725, 725)
+Window.clearcolor = (0.1, 0.1, 0.1, 0.1)
+
+
+class Pathfind_UI_App(App):
+    def __init__(self, **kwargs):
+        super(Pathfind_UI_App, self).__init__(**kwargs)
+
+        self.GRID_HEIGHT = 30
+        self.GRID_WIDTH = 30
+        self.GRID_MARGIN = 200
+        self.BLOCK_SIZE = 30
         self.WINDOW_HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.BLOCK_SIZE
         self.WINDOW_WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.BLOCK_SIZE
 
-        self.LAYOUT = GridLayout(cols=self.GRID_WIDTH, row_default_height=self.BLOCK_SIZE)
+        self.LAYOUT = GridLayout(
+            rows=self.GRID_HEIGHT,
+            cols=self.GRID_WIDTH,
+            row_default_height=self.BLOCK_SIZE,
+            col_default_width=self.BLOCK_SIZE,
+            row_force_default=True,
+            col_force_default=True,
+            pos=(self.GRID_MARGIN, -self.GRID_MARGIN),
+            orientation="lr-tb",
+        )
 
         self.START_COORDS = None
         self.END_COORDS = None
         self.GRID = []
         self.ALL_RECTS = {}
         self.WALLS = []
-        self.AMOUNT_OF_WALLS = 100
+        self.AMOUNT_OF_WALLS = 500
         self.PATH = None
+        self.FIRST_TIME_GRID_INST = True
 
-    def run_app(self):
-        self.SCREEN = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
-        self.SCREEN.fill(Colours.PASS.value)
-        pygame.display.set_caption("Fun with Pathfind")
-
+    def build(self):
         self.createWalls()
-        self.drawGrid(True)
+        if self.FIRST_TIME_GRID_INST:
+            self.drawGrid(True)
+            self.FIRST_TIME_GRID_INST = False
+        return self.LAYOUT
 
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    coord = next(
-                        (
-                            key
-                            for (key, val) in self.ALL_RECTS.items()
-                            if val.collidepoint(event.pos)
-                        ),
-                        None,
-                    )
+    def on_touch_down(self, _, touch):
+        coord = None
 
-                    if coord and not coord in self.WALLS:
-                        if event.button == ClickType.LEFT.value:
+        for key, button in self.ALL_RECTS.items():
 
-                            if not self.START_COORDS and self.END_COORDS != coord:
-                                self.START_COORDS = coord
-                                self.updateGridCell(self.START_COORDS, Cell_Type.START)
-
-                            elif not self.END_COORDS and self.START_COORDS != coord:
-                                self.END_COORDS = coord
-                                self.updateGridCell(self.END_COORDS, Cell_Type.END)
-
-                            elif self.END_COORDS and self.START_COORDS != coord:
-                                self.updateGridCell(self.END_COORDS, Cell_Type.PASS)
-                                self.END_COORDS = coord
-                                self.updateGridCell(self.END_COORDS, Cell_Type.END)
-                                self.resetPath()
-
-                        elif event.button == ClickType.RIGHT.value:
-                            self.updateGridCell(coord, Cell_Type.PASS)
-
-                            if self.END_COORDS == coord:
-                                self.END_COORDS = None
-                                self.resetPath()
-
-                            elif self.START_COORDS == coord:
-                                self.START_COORDS = None
-                                self.resetPath()
-
-                        if self.START_COORDS and self.END_COORDS:
-                            self.updateGridCell(self.START_COORDS, Cell_Type.START)
-                            self.updateGridCell(self.END_COORDS, Cell_Type.END)
-
-                            try:
-                                pathfind = A_star_pathfind(tuple(self.GRID))
-                            except ValueError as err:
-                                self.displayLog(err)
-                                continue
-                            except Exception as err:
-                                self.displayLog(err)
-                                continue
-
-                            self.PATH = pathfind.path[1:]
-
-                            for coord in self.PATH:
-                                self.updateGridCell(coord, Colours.PATH)
-
-            pygame.display.update()
-
+            if (button.pos[0] < touch.pos[0] and \
+                touch.pos[0] < button.pos[0] + self.BLOCK_SIZE) \
+                and (button.pos[1] < touch.pos[1] and \
+                     touch.pos[1] < button.pos[1] + self.BLOCK_SIZE):
     
+                coord = key
+                break
+
+        if coord and not coord in self.WALLS:
+            if touch.button == ClickType.LEFT.value:
+
+                if not self.START_COORDS and self.END_COORDS != coord:
+                    self.START_COORDS = coord
+                    self.updateGridCell(self.START_COORDS, Cell_Type.START)
+
+                elif not self.END_COORDS and self.START_COORDS != coord:
+                    self.END_COORDS = coord
+                    self.updateGridCell(self.END_COORDS, Cell_Type.END)
+
+                elif self.END_COORDS and self.START_COORDS != coord:
+                    self.updateGridCell(self.END_COORDS, Cell_Type.PASS)
+                    self.END_COORDS = coord
+                    self.updateGridCell(self.END_COORDS, Cell_Type.END)
+                    self.resetPath()
+
+            elif touch.button == ClickType.RIGHT.value:
+                self.updateGridCell(coord, Cell_Type.PASS)
+
+                if self.END_COORDS == coord:
+                    self.END_COORDS = None
+                    self.resetPath()
+
+                elif self.START_COORDS == coord:
+                    self.START_COORDS = None
+                    self.resetPath()
+
+            if self.START_COORDS and self.END_COORDS:
+                self.updateGridCell(self.START_COORDS, Cell_Type.START)
+                self.updateGridCell(self.END_COORDS, Cell_Type.END)
+
+                try:
+                    pathfind = A_star_pathfind(tuple(self.GRID))
+                    self.PATH = pathfind.path[1:]
+
+                    for coord in self.PATH:
+                        self.updateGridCell(coord, Colours.PATH)
+                except ValueError as err:
+                    self.displayLog(err)
+                except Exception as err:
+                    self.displayLog(err)
+
     def displayLog(self, err: str) -> None:
         print(err)
-    
+
     def createWalls(self) -> None:
         self.WALLS = [
             (
-                random.randint(0, self.BLOCK_SIZE - 1),
-                random.randint(0, self.BLOCK_SIZE - 1),
+                random.randint(0, self.GRID_WIDTH - 1),
+                random.randint(0, self.GRID_HEIGHT - 1),
             )
             for _ in range(self.AMOUNT_OF_WALLS)
         ]
@@ -136,17 +144,12 @@ class Pathfind_UI_App:
                 self.updateGridCell(coord, Cell_Type.PASS)
             self.PATH = None
 
-        self.drawGrid(False)
-
     def updateGridCell(self, coord: Coord, new_value: Enum) -> None:
         if new_value in Cell_Type:
             x, y = coord
             self.GRID[x] = self.GRID[x][:y] + new_value.value + self.GRID[x][y + 1 :]
-        pygame.draw.rect(
-            self.SCREEN, Colours[new_value.name].value, self.ALL_RECTS[coord], 0
-        )
 
-        self.drawGrid(False)
+        self.ALL_RECTS[coord].background_color = Colours[new_value.name].value
 
     def drawGrid(self, new_string_grid: bool) -> None:
         if new_string_grid:
@@ -157,15 +160,14 @@ class Pathfind_UI_App:
 
         for w in range(self.GRID_WIDTH):
             for h in range(self.GRID_HEIGHT):
-
-                x = self.GRID_MARGIN + h * self.GRID_HEIGHT
-                y = self.GRID_MARGIN + w * self.GRID_WIDTH
-                rect = pygame.Rect(y, x, self.BLOCK_SIZE, self.BLOCK_SIZE)
-
-                self.ALL_RECTS[(h, w)] = rect
+                rect = Button(
+                    width=self.BLOCK_SIZE,
+                )
+                rect.bind(on_touch_down=self.on_touch_down)
 
                 if (h, w) in self.WALLS:
-                    pygame.draw.rect(self.SCREEN, Colours.WALL.value, rect, 0)
+                    rect.background_color = Colours.WALL.value
+
                     if new_string_grid:
                         self.GRID[h] = (
                             self.GRID[h][:w]
@@ -173,12 +175,14 @@ class Pathfind_UI_App:
                             + self.GRID[h][w + 1 :]
                         )
                 else:
-                    pygame.draw.rect(self.SCREEN, Colours.WALL.value, rect, 1)
+                    rect.background_color = Colours.PASS.value
+
+                self.LAYOUT.add_widget(rect)
+                self.ALL_RECTS[(h, w)] = rect
 
 
 def main():
-    ui = Pathfind_UI_App()
-    ui.run_app()
+    Pathfind_UI_App().run()
 
 
 if __name__ == "__main__":
