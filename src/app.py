@@ -5,6 +5,7 @@ from a_star import A_star_pathfind, Cell_Type
 from kivy.app import App
 from kivy.config import Config
 from kivy.core.window import Window
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -18,9 +19,9 @@ type Coord = tuple[int, int]
 class Colours(Enum):
     PASS = (1.5, 1.5, 1.5, 1.5)
     WALL = (0.7, 0.7, 0.7, 0.7)
-    START = (1, 0, 0, 1)
-    END = (0, 1, 0, 1)
-    PATH = (1, 0, 1, 1)
+    START = (2, 0, 0, 2)
+    END = (0, 2, 0, 2)
+    PATH = (2, 0, 2, 2)
 
 
 class ClickType(Enum):
@@ -28,7 +29,7 @@ class ClickType(Enum):
     RIGHT = "right"
 
 
-Window.system_size = (725, 725)
+Window.system_size = (1000, 650)
 Window.clearcolor = (0.1, 0.1, 0.1, 0.1)
 
 
@@ -43,16 +44,7 @@ class Pathfind_UI_App(App):
         self.WINDOW_HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.BLOCK_SIZE
         self.WINDOW_WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.BLOCK_SIZE
 
-        self.LAYOUT = GridLayout(
-            rows=self.GRID_HEIGHT,
-            cols=self.GRID_WIDTH,
-            row_default_height=self.BLOCK_SIZE,
-            col_default_width=self.BLOCK_SIZE,
-            row_force_default=True,
-            col_force_default=True,
-            pos=(self.GRID_MARGIN, -self.GRID_MARGIN),
-            orientation="lr-tb",
-        )
+        self.GRID_LAYOUT = None
 
         self.START_COORDS = None
         self.END_COORDS = None
@@ -65,21 +57,66 @@ class Pathfind_UI_App(App):
 
     def build(self):
         self.createWalls()
+
+        return self.createBox()
+
+    def createBox(self):
+        root_box = BoxLayout(orientation="horizontal")
+        input_half = BoxLayout(orientation="vertical")
+        first_row_input_box = BoxLayout(orientation="horizontal")
+        second_row_input_box = BoxLayout(orientation="horizontal")
+
+        self.GRID_LAYOUT = GridLayout(
+            rows=self.GRID_HEIGHT,
+            cols=self.GRID_WIDTH,
+            row_default_height=self.BLOCK_SIZE,
+            col_default_width=self.BLOCK_SIZE,
+            row_force_default=True,
+            col_force_default=True,
+            pos=(self.GRID_MARGIN, -self.GRID_MARGIN),
+        )
+
         if self.FIRST_TIME_GRID_INST:
             self.drawGrid(True)
             self.FIRST_TIME_GRID_INST = False
-        return self.LAYOUT
+
+        grid_width = TextInput(text="30", multiline=False)
+        grid_height = TextInput(text="30", multiline=False)
+        grid_block_size = TextInput(text="30", multiline=False)
+        grid_wall_amount = TextInput(text="200", multiline=False)
+        generate_grid_button = Button()
+        generation_log = TextInput(
+            text="Results will appear here", multiline=True, readonly=True
+        )
+
+        first_row_input_box.add_widget(grid_width)
+        first_row_input_box.add_widget(grid_block_size)
+        second_row_input_box.add_widget(grid_height)
+        second_row_input_box.add_widget(grid_wall_amount)
+
+        input_half.add_widget(first_row_input_box)
+        input_half.add_widget(second_row_input_box)
+        input_half.add_widget(generate_grid_button)
+        input_half.add_widget(generation_log)
+
+        root_box.add_widget(self.GRID_LAYOUT)
+        root_box.add_widget(input_half)
+
+        return root_box
 
     def on_touch_down(self, _, touch):
         coord = None
 
         for key, button in self.ALL_RECTS.items():
 
-            if (button.pos[0] < touch.pos[0] and \
-                touch.pos[0] < button.pos[0] + self.BLOCK_SIZE) \
-                and (button.pos[1] < touch.pos[1] and \
-                     touch.pos[1] < button.pos[1] + self.BLOCK_SIZE):
-    
+            if (
+                button.pos[0] < touch.pos[0]
+                and touch.pos[0] < button.pos[0] + self.BLOCK_SIZE
+            ) and (
+                button.pos[1] < touch.pos[1]
+                and touch.pos[1] < button.pos[1] + self.BLOCK_SIZE
+            ):
+
                 coord = key
                 break
 
@@ -130,13 +167,17 @@ class Pathfind_UI_App(App):
         print(err)
 
     def createWalls(self) -> None:
-        self.WALLS = [
-            (
-                random.randint(0, self.GRID_WIDTH - 1),
+        walls_left = self.AMOUNT_OF_WALLS
+
+        while walls_left > 0:
+            coord = (
                 random.randint(0, self.GRID_HEIGHT - 1),
+                random.randint(0, self.GRID_WIDTH - 1),
             )
-            for _ in range(self.AMOUNT_OF_WALLS)
-        ]
+
+            if not coord in self.WALLS:
+                self.WALLS.append(coord)
+                walls_left -= 1
 
     def resetPath(self) -> None:
         if self.PATH:
@@ -177,7 +218,7 @@ class Pathfind_UI_App(App):
                 else:
                     rect.background_color = Colours.PASS.value
 
-                self.LAYOUT.add_widget(rect)
+                self.GRID_LAYOUT.add_widget(rect)
                 self.ALL_RECTS[(h, w)] = rect
 
 
