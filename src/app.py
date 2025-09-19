@@ -29,7 +29,7 @@ class ClickType(Enum):
     RIGHT = "right"
 
 
-Window.system_size = (1000, 650)
+Window.system_size = (1050, 550)
 Window.clearcolor = (0.1, 0.1, 0.1, 0.1)
 
 
@@ -39,7 +39,7 @@ class Pathfind_UI_App(App):
 
         self.GRID_HEIGHT = 30
         self.GRID_WIDTH = 30
-        self.GRID_MARGIN = 200
+        self.GRID_MARGIN = 100
         self.BLOCK_SIZE = 30
         self.WINDOW_HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.BLOCK_SIZE
         self.WINDOW_WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.BLOCK_SIZE
@@ -51,7 +51,7 @@ class Pathfind_UI_App(App):
         self.GRID = []
         self.ALL_RECTS = {}
         self.WALLS = []
-        self.AMOUNT_OF_WALLS = 500
+        self.AMOUNT_OF_WALLS = 400
         self.PATH = None
         self.FIRST_TIME_GRID_INST = True
 
@@ -61,10 +61,13 @@ class Pathfind_UI_App(App):
         return self.createBox()
 
     def createBox(self):
-        root_box = BoxLayout(orientation="horizontal")
-        input_half = BoxLayout(orientation="vertical")
-        first_row_input_box = BoxLayout(orientation="horizontal")
-        second_row_input_box = BoxLayout(orientation="horizontal")
+        root_box = GridLayout(rows=1, cols=2, pos=(self.GRID_MARGIN, -self.GRID_MARGIN))
+        input_half = GridLayout(
+            rows=4,
+            cols=1,
+            spacing=30,
+        )
+        top_input_box = GridLayout(rows=4, cols=2, spacing=30)
 
         self.GRID_LAYOUT = GridLayout(
             rows=self.GRID_HEIGHT,
@@ -73,29 +76,47 @@ class Pathfind_UI_App(App):
             col_default_width=self.BLOCK_SIZE,
             row_force_default=True,
             col_force_default=True,
-            pos=(self.GRID_MARGIN, -self.GRID_MARGIN),
         )
 
         if self.FIRST_TIME_GRID_INST:
             self.drawGrid(True)
             self.FIRST_TIME_GRID_INST = False
 
-        grid_width = TextInput(text="30", multiline=False)
-        grid_height = TextInput(text="30", multiline=False)
-        grid_block_size = TextInput(text="30", multiline=False)
-        grid_wall_amount = TextInput(text="200", multiline=False)
-        generate_grid_button = Button()
+        grid_width = TextInput(
+            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+        )
+        grid_height = TextInput(
+            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+        )
+        grid_block_size = TextInput(
+            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+        )
+        grid_wall_amount = TextInput(
+            text="200", multiline=False, size_hint=(None, None), height=70, width=300
+        )
+        generate_grid_button = Button(
+            text="Generate grid", size_hint=(None, None), height=70, width=630
+        )
         generation_log = TextInput(
-            text="Results will appear here", multiline=True, readonly=True
+            text="Results will appear here",
+            multiline=True,
+            readonly=True,
+            size_hint_y=None,
+            height=400,
+            background_color=(0.2, 0.2, 0.2, 0.2),
+            foreground_color=(1, 1, 1, 1),
         )
 
-        first_row_input_box.add_widget(grid_width)
-        first_row_input_box.add_widget(grid_block_size)
-        second_row_input_box.add_widget(grid_height)
-        second_row_input_box.add_widget(grid_wall_amount)
+        top_input_box.add_widget(Label(text="Width:"))
+        top_input_box.add_widget(Label(text="Cell size:"))
+        top_input_box.add_widget(grid_width)
+        top_input_box.add_widget(grid_block_size)
+        top_input_box.add_widget(Label(text="Height:"))
+        top_input_box.add_widget(Label(text="Obstacles:"))
+        top_input_box.add_widget(grid_height)
+        top_input_box.add_widget(grid_wall_amount)
 
-        input_half.add_widget(first_row_input_box)
-        input_half.add_widget(second_row_input_box)
+        input_half.add_widget(top_input_box)
         input_half.add_widget(generate_grid_button)
         input_half.add_widget(generation_log)
 
