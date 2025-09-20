@@ -12,6 +12,9 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
 Config.set("kivy", "exit_on_escape", "0")
+Config.set("graphics", "resizable", False)
+Config.set('graphics', 'width', '500')
+Config.set('graphics', 'height', '500')
 
 type Coord = tuple[int, int]
 
@@ -28,23 +31,26 @@ class ClickType(Enum):
     LEFT = "left"
     RIGHT = "right"
 
+HEIGHT = 550
+WIDTH = 910
 
-Window.system_size = (1050, 550)
+Window.minimum_width = WIDTH
+Window.minimum_height = HEIGHT
+Window.system_size = (WIDTH, HEIGHT)
 Window.clearcolor = (0.1, 0.1, 0.1, 0.1)
 
 
-class Pathfind_UI_App(App):
+class PathfindApp(App):
     def __init__(self, **kwargs):
-        super(Pathfind_UI_App, self).__init__(**kwargs)
+        super(PathfindApp, self).__init__(**kwargs)
 
         self.GRID_HEIGHT = 30
         self.GRID_WIDTH = 30
         self.GRID_MARGIN = 100
-        self.BLOCK_SIZE = 30
-        self.WINDOW_HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.BLOCK_SIZE
-        self.WINDOW_WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.BLOCK_SIZE
+        self.CELL_SIZE = 30
 
         self.GRID_LAYOUT = None
+        self.GENERATION_LONG = None
 
         self.START_COORDS = None
         self.END_COORDS = None
@@ -61,19 +67,64 @@ class Pathfind_UI_App(App):
         return self.createBox()
 
     def createBox(self):
-        root_box = GridLayout(rows=1, cols=2, pos=(self.GRID_MARGIN, -self.GRID_MARGIN))
-        input_half = GridLayout(
-            rows=4,
-            cols=1,
-            spacing=30,
+
+        def callback(_):
+            global WIDTH, HEIGHT
+
+            self.GRID_WIDTH = int(grid_width.text)
+            self.GRID_HEIGHT = int(grid_height.text)
+            self.CELL_SIZE = int(grid_cell_size.text)
+            self.AMOUNT_OF_WALLS = int(grid_wall_amount.text)
+            
+            self.FIRST_TIME_GRID_INST = True
+            self.START_COORDS = None
+            self.END_COORDS = None
+            self.GRID = []
+            self.ALL_RECTS = {}
+            self.WALLS = []
+
+            while len(self.GRID_LAYOUT.children) > 0:
+                for child in self.GRID_LAYOUT.children:
+                    self.GRID_LAYOUT.remove_widget(child)
+
+            self.GRID_LAYOUT.rows = self.GRID_HEIGHT
+            self.GRID_LAYOUT.cols = self.GRID_WIDTH
+            self.GRID_LAYOUT.row_default_height=self.CELL_SIZE
+            self.GRID_LAYOUT.col_default_width=self.CELL_SIZE
+
+            # HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.CELL_SIZE
+            # WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.CELL_SIZE
+            # Window.system_size = (WIDTH, HEIGHT)
+
+            self.createWalls()
+            self.drawGrid(True)
+
+        root_box = BoxLayout(
+            orientation="horizontal",
+            pos=(self.GRID_MARGIN, -self.GRID_MARGIN),
+            size_hint_x=None,
+            width=2000,
         )
-        top_input_box = GridLayout(rows=4, cols=2, spacing=30)
+        input_half = GridLayout(
+            rows=3,
+            cols=1,
+            spacing=20,
+            orientation="tb-lr",
+        )
+        top_input_box = GridLayout(
+            rows=4,
+            cols=2,
+            spacing=20,
+            size_hint=(None, None),
+            height=250,
+            orientation="tb-lr",
+        )
 
         self.GRID_LAYOUT = GridLayout(
             rows=self.GRID_HEIGHT,
             cols=self.GRID_WIDTH,
-            row_default_height=self.BLOCK_SIZE,
-            col_default_width=self.BLOCK_SIZE,
+            row_default_height=self.CELL_SIZE,
+            col_default_width=self.CELL_SIZE,
             row_force_default=True,
             col_force_default=True,
         )
@@ -83,45 +134,110 @@ class Pathfind_UI_App(App):
             self.FIRST_TIME_GRID_INST = False
 
         grid_width = TextInput(
-            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+            text="30",
+            multiline=False,
+            size_hint=(None, None),
+            height=65,
+            width=300,
+            padding=15,
+            font_name="GillSans",
         )
         grid_height = TextInput(
-            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+            text="30",
+            multiline=False,
+            size_hint=(None, None),
+            height=65,
+            width=300,
+            padding=15,
+            font_name="GillSans",
         )
-        grid_block_size = TextInput(
-            text="30", multiline=False, size_hint=(None, None), height=70, width=300
+        grid_cell_size = TextInput(
+            text="30",
+            multiline=False,
+            size_hint=(None, None),
+            height=65,
+            width=300,
+            padding=15,
+            font_name="GillSans",
         )
         grid_wall_amount = TextInput(
-            text="200", multiline=False, size_hint=(None, None), height=70, width=300
+            text="400",
+            multiline=False,
+            size_hint=(None, None),
+            height=65,
+            width=300,
+            padding=15,
+            font_name="GillSans",
         )
         generate_grid_button = Button(
-            text="Generate grid", size_hint=(None, None), height=70, width=630
+            text="Generate grid",
+            size_hint=(None, None),
+            height=70,
+            width=620,
+            font_name="GillSans",
         )
-        generation_log = TextInput(
+        generate_grid_button.bind(on_press=callback)
+        self.GENERATION_LONG = TextInput(
             text="Results will appear here",
             multiline=True,
             readonly=True,
-            size_hint_y=None,
-            height=400,
-            background_color=(0.2, 0.2, 0.2, 0.2),
-            foreground_color=(1, 1, 1, 1),
+            size_hint=(None, None),
+            height=540,
+            width=620,
+            background_color=(0.3, 0.3, 0.3, 0.3),
+            foreground_color=(0.7, 0.7, 0.7, 0.7),
+            padding=30,
+            font_name="GillSans",
         )
 
-        top_input_box.add_widget(Label(text="Width:"))
-        top_input_box.add_widget(Label(text="Cell size:"))
+        top_input_box.add_widget(
+            Label(
+                text="Width:",
+                size_hint=(None, None),
+                height=20,
+                width=90,
+                font_name="GillSans",
+            )
+        )
         top_input_box.add_widget(grid_width)
-        top_input_box.add_widget(grid_block_size)
-        top_input_box.add_widget(Label(text="Height:"))
-        top_input_box.add_widget(Label(text="Obstacles:"))
+        top_input_box.add_widget(
+            Label(
+                text="Height:",
+                size_hint=(None, None),
+                height=20,
+                width=90,
+                font_name="GillSans",
+            )
+        )
         top_input_box.add_widget(grid_height)
+        top_input_box.add_widget(
+            Label(
+                text="Cell size:",
+                size_hint=(None, None),
+                height=20,
+                width=110,
+                font_name="GillSans",
+            )
+        )
+        top_input_box.add_widget(grid_cell_size)
+        top_input_box.add_widget(
+            Label(
+                text="Obstacles:",
+                size_hint=(None, None),
+                height=20,
+                width=130,
+                font_name="GillSans",
+            )
+        )
         top_input_box.add_widget(grid_wall_amount)
 
         input_half.add_widget(top_input_box)
         input_half.add_widget(generate_grid_button)
-        input_half.add_widget(generation_log)
+        input_half.add_widget(self.GENERATION_LONG)
 
         root_box.add_widget(self.GRID_LAYOUT)
         root_box.add_widget(input_half)
+
 
         return root_box
 
@@ -132,10 +248,10 @@ class Pathfind_UI_App(App):
 
             if (
                 button.pos[0] < touch.pos[0]
-                and touch.pos[0] < button.pos[0] + self.BLOCK_SIZE
+                and touch.pos[0] < button.pos[0] + self.CELL_SIZE
             ) and (
                 button.pos[1] < touch.pos[1]
-                and touch.pos[1] < button.pos[1] + self.BLOCK_SIZE
+                and touch.pos[1] < button.pos[1] + self.CELL_SIZE
             ):
 
                 coord = key
@@ -185,7 +301,7 @@ class Pathfind_UI_App(App):
                     self.displayLog(err)
 
     def displayLog(self, err: str) -> None:
-        print(err)
+        self.GENERATION_LONG.text = err
 
     def createWalls(self) -> None:
         walls_left = self.AMOUNT_OF_WALLS
@@ -223,7 +339,7 @@ class Pathfind_UI_App(App):
         for w in range(self.GRID_WIDTH):
             for h in range(self.GRID_HEIGHT):
                 rect = Button(
-                    width=self.BLOCK_SIZE,
+                    width=self.CELL_SIZE,
                 )
                 rect.bind(on_touch_down=self.on_touch_down)
 
@@ -244,7 +360,7 @@ class Pathfind_UI_App(App):
 
 
 def main():
-    Pathfind_UI_App().run()
+    PathfindApp().run()
 
 
 if __name__ == "__main__":
