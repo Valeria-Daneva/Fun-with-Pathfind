@@ -12,9 +12,6 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
 Config.set("kivy", "exit_on_escape", "0")
-Config.set("graphics", "resizable", False)
-Config.set('graphics', 'width', '500')
-Config.set('graphics', 'height', '500')
 
 type Coord = tuple[int, int]
 
@@ -31,6 +28,7 @@ class ClickType(Enum):
     LEFT = "left"
     RIGHT = "right"
 
+
 HEIGHT = 550
 WIDTH = 910
 
@@ -43,6 +41,7 @@ Window.clearcolor = (0.1, 0.1, 0.1, 0.1)
 class PathfindApp(App):
     def __init__(self, **kwargs):
         super(PathfindApp, self).__init__(**kwargs)
+        self.title = "Fun with Pathfind"
 
         self.GRID_HEIGHT = 30
         self.GRID_WIDTH = 30
@@ -69,14 +68,26 @@ class PathfindApp(App):
     def createBox(self):
 
         def callback(_):
+            # TODO
+            # VALIDATE DATA:
+            # - all are just numbers
+            # - obstacles aren't more than height * width
+            # - limit cell size, height, width in some way
+            # - use on_text function for this mabbe
+            # REFACTOR THIS FUNCTION
+            # ADD CLOCK TO TRACK AMOUNT OF TIME THE PATHFINDING TOOK
+            # ADD BACKGROUND OR BORDER TO LOG
+            # ADJUST LOG WHEN ADDING NEW TEXT
+            # ADJUST SCREEN WHEN UPDATING GRID
+            # USE SNAKE CASE ONLY
+            # ADD ICON
             global WIDTH, HEIGHT
 
             self.GRID_WIDTH = int(grid_width.text)
             self.GRID_HEIGHT = int(grid_height.text)
             self.CELL_SIZE = int(grid_cell_size.text)
             self.AMOUNT_OF_WALLS = int(grid_wall_amount.text)
-            
-            self.FIRST_TIME_GRID_INST = True
+
             self.START_COORDS = None
             self.END_COORDS = None
             self.GRID = []
@@ -89,8 +100,8 @@ class PathfindApp(App):
 
             self.GRID_LAYOUT.rows = self.GRID_HEIGHT
             self.GRID_LAYOUT.cols = self.GRID_WIDTH
-            self.GRID_LAYOUT.row_default_height=self.CELL_SIZE
-            self.GRID_LAYOUT.col_default_width=self.CELL_SIZE
+            self.GRID_LAYOUT.row_default_height = self.CELL_SIZE
+            self.GRID_LAYOUT.col_default_width = self.CELL_SIZE
 
             # HEIGHT = self.GRID_MARGIN * 2 + self.GRID_HEIGHT * self.CELL_SIZE
             # WIDTH = self.GRID_MARGIN * 2 + self.GRID_WIDTH * self.CELL_SIZE
@@ -98,6 +109,7 @@ class PathfindApp(App):
 
             self.createWalls()
             self.drawGrid(True)
+            self.displayLog("New grid created!         ", False)
 
         root_box = BoxLayout(
             orientation="horizontal",
@@ -177,15 +189,13 @@ class PathfindApp(App):
             font_name="GillSans",
         )
         generate_grid_button.bind(on_press=callback)
-        self.GENERATION_LONG = TextInput(
+        self.GENERATION_LONG = Label(
             text="Results will appear here",
-            multiline=True,
-            readonly=True,
             size_hint=(None, None),
-            height=540,
-            width=620,
-            background_color=(0.3, 0.3, 0.3, 0.3),
-            foreground_color=(0.7, 0.7, 0.7, 0.7),
+            height=100,
+            width=295,
+            # background_color=(0.3, 0.3, 0.3, 0.3),
+            color=(0.7, 0.7, 0.7, 0.7),
             padding=30,
             font_name="GillSans",
         )
@@ -237,7 +247,6 @@ class PathfindApp(App):
 
         root_box.add_widget(self.GRID_LAYOUT)
         root_box.add_widget(input_half)
-
 
         return root_box
 
@@ -292,16 +301,23 @@ class PathfindApp(App):
                 try:
                     pathfind = A_star_pathfind(tuple(self.GRID))
                     self.PATH = pathfind.path[1:]
+                    log = f"Shortest path length: {pathfind.path_length}"
+                    self.displayLog(log, False)
+                    print(pathfind.print_path())
 
                     for coord in self.PATH:
                         self.updateGridCell(coord, Colours.PATH)
                 except ValueError as err:
-                    self.displayLog(err)
+                    self.displayLog(str(err), True)
                 except Exception as err:
-                    self.displayLog(err)
+                    self.displayLog(str(err), True)
 
-    def displayLog(self, err: str) -> None:
-        self.GENERATION_LONG.text = err
+    def displayLog(self, input: str, isErr: bool) -> None:
+        self.GENERATION_LONG.color = (
+            Colours.START.value if isErr else (0.7, 0.7, 0.7, 0.7)
+        )
+
+        self.GENERATION_LONG.text = input
 
     def createWalls(self) -> None:
         walls_left = self.AMOUNT_OF_WALLS
@@ -336,8 +352,8 @@ class PathfindApp(App):
                 for _ in range(self.GRID_HEIGHT)
             ]
 
-        for w in range(self.GRID_WIDTH):
-            for h in range(self.GRID_HEIGHT):
+        for h in range(self.GRID_HEIGHT):
+            for w in range(self.GRID_WIDTH):
                 rect = Button(
                     width=self.CELL_SIZE,
                 )
