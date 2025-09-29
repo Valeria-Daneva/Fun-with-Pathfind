@@ -1,7 +1,6 @@
 import random
 from enum import Enum
 
-from a_star import A_star_pathfind, Cell_Type
 from kivy.app import App
 from kivy.config import Config
 from kivy.core.window import Window
@@ -10,6 +9,8 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+
+from a_star import A_star_pathfind, Cell_Type
 
 Config.set("kivy", "exit_on_escape", "0")
 
@@ -22,6 +23,7 @@ class Colours(Enum):
     START = (2, 0, 0, 2)
     END = (0, 2, 0, 2)
     PATH = (2, 0, 2, 2)
+    TEXT = (0, 0, 0, 1)
 
 
 class ClickType(Enum):
@@ -67,13 +69,18 @@ class PathfindApp(App):
 
     def createBox(self):
 
+        def on_text(instance, value):
+            if not value.isdigit():
+                instance.foreground_color = Colours.START.value
+                generate_grid_button.disabled = True
+            else:
+                instance.foreground_color = Colours.TEXT.value
+                generate_grid_button.disabled = False
+
         def callback(_):
             # TODO
             # VALIDATE DATA:
-            # - all are just numbers
-            # - obstacles aren't more than height * width
             # - limit cell size, height, width in some way
-            # - use on_text function for this mabbe
             # REFACTOR THIS FUNCTION
             # ADD CLOCK TO TRACK AMOUNT OF TIME THE PATHFINDING TOOK
             # ADD BACKGROUND OR BORDER TO LOG
@@ -87,6 +94,10 @@ class PathfindApp(App):
             self.GRID_HEIGHT = int(grid_height.text)
             self.CELL_SIZE = int(grid_cell_size.text)
             self.AMOUNT_OF_WALLS = int(grid_wall_amount.text)
+
+            if self.AMOUNT_OF_WALLS > self.GRID_HEIGHT * self.GRID_WIDTH:
+                self.displayLog("There are more walls than there are cells.", True)
+                return
 
             self.START_COORDS = None
             self.END_COORDS = None
@@ -154,6 +165,7 @@ class PathfindApp(App):
             padding=15,
             font_name="GillSans",
         )
+        grid_width.bind(text=on_text)
         grid_height = TextInput(
             text="30",
             multiline=False,
@@ -163,6 +175,7 @@ class PathfindApp(App):
             padding=15,
             font_name="GillSans",
         )
+        grid_height.bind(text=on_text)
         grid_cell_size = TextInput(
             text="30",
             multiline=False,
@@ -172,6 +185,7 @@ class PathfindApp(App):
             padding=15,
             font_name="GillSans",
         )
+        grid_cell_size.bind(text=on_text)
         grid_wall_amount = TextInput(
             text="400",
             multiline=False,
@@ -181,6 +195,8 @@ class PathfindApp(App):
             padding=15,
             font_name="GillSans",
         )
+        grid_wall_amount.bind(text=on_text)
+
         generate_grid_button = Button(
             text="Generate grid",
             size_hint=(None, None),
